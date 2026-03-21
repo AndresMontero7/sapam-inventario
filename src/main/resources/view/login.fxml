@@ -1,0 +1,38 @@
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20" style="-fx-background-color: linear-gradient(to bottom, #E3F2FD, #BBDEFB);" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sapam.inventario.javafx.controller.LoginController">
+    <padding>
+        <Insets bottom="40" left="40" right="40" top="40" />
+    </padding>
+
+    <Label style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2C3E50;" text="SAPAM Inventario">
+        <font>
+            <Font name="System Bold" size="28.0" />
+        </font>
+    </Label>
+
+    <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 30; -fx-effect: dropshadow(three-pass-box, rgba(74,144,226,0.2), 20, 0, 0, 10);" maxWidth="350">
+        
+        <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2C3E50;" text="Iniciar Sesión" />
+
+        <TextField fx:id="usernameField" promptText="Usuario" style="-fx-pref-height: 40px; -fx-background-radius: 8; -fx-border-color: #E3F2FD; -fx-border-radius: 8;">
+            <VBox.margin>
+                <Insets top="10" />
+            </VBox.margin>
+        </TextField>
+
+        <PasswordField fx:id="passwordField" promptText="Contraseña" style="-fx-pref-height: 40px; -fx-background-radius: 8; -fx-border-color: #E3F2FD; -fx-border-radius: 8;" />
+
+        <!-- 🟢 ÚNICA LÍNEA QUE CAMBIA: handleLogin → iniciarSesion -->
+        <Button onAction="#iniciarSesion" style="-fx-background-color: #4A90E2; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-height: 40px; -fx-background-radius: 8; -fx-cursor: hand;" text="Ingresar">
+            <VBox.margin>
+                <Insets top="10" />
+            </VBox.margin>
+        </Button>
+
+        <Label style="-fx-text-fill: #6c757d; -fx-font-size: 11px;" text="Admin: admin/12345 | Usuario: usuario/12345" />
+    </VBox>
+</VBox>
