@@ -2,13 +2,14 @@ package com.sapam.inventario.service;
 
 import com.sapam.inventario.entity.Movimiento;
 import com.sapam.inventario.entity.Producto;
+import com.sapam.inventario.entity.Usuario;
 import com.sapam.inventario.repository.MovimientoRepository;
 import com.sapam.inventario.repository.ProductoRepository;
+import com.sapam.inventario.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class MovimientoService {
@@ -19,56 +20,36 @@ public class MovimientoService {
     @Autowired
     private ProductoRepository productoRepository;
 
-    public List<Movimiento> listarTodos() {
-        return movimientoRepository.findAll();
-    }
-
-    public List<Movimiento> buscarPorProducto(Integer productoId) {
-        return movimientoRepository.findByProductoId(productoId);
-    }
-
-    @Transactional
-    public void registrarEntrada(Integer productoId, Integer cantidad, Integer usuarioId, String observaciones) {
-        Producto producto = productoRepository.findById(productoId)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-
-        int stockAnterior = producto.getStockActual();
-        int stockNuevo = stockAnterior + cantidad;
-
-        producto.setStockActual(stockNuevo);
-        productoRepository.save(producto);
-
-        Movimiento movimiento = new Movimiento();
-        movimiento.setProducto(producto);
-        movimiento.setTipo(Movimiento.TipoMovimiento.entrada);
-        movimiento.setCantidad(cantidad);
-        movimiento.setStockResultante(stockNuevo);
-        movimiento.setObservaciones(observaciones);
-        movimiento.setFecha(LocalDateTime.now());
-
-        movimientoRepository.save(movimiento);
-    }
+    @Autowired
+    private UsuarioRepository usuarioRepository;  // ¡Esto faltaba!
 
     @Transactional
     public void registrarSalida(Integer productoId, Integer cantidad, Integer usuarioId, String recibioPor, String observaciones) {
+        // Buscar producto
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
+        // Validar stock
         if (producto.getStockActual() < cantidad) {
-            throw new RuntimeException("Stock insuficiente");
+            throw new RuntimeException("Stock insuficiente. Stock actual: " + producto.getStockActual());
         }
 
-        int stockAnterior = producto.getStockActual();
-        int stockNuevo = stockAnterior - cantidad;
-
-        producto.setStockActual(stockNuevo);
+        // Actualizar stock
+        int nuevoStock = producto.getStockActual() - cantidad;
+        producto.setStockActual(nuevoStock);
         productoRepository.save(producto);
 
+        // Buscar usuario
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Crear movimiento
         Movimiento movimiento = new Movimiento();
         movimiento.setProducto(producto);
         movimiento.setTipo(Movimiento.TipoMovimiento.salida);
         movimiento.setCantidad(cantidad);
-        movimiento.setStockResultante(stockNuevo);
+        movimiento.setStockResultante(nuevoStock);
+        movimiento.setUsuario(usuario);
         movimiento.setObservaciones(observaciones);
         movimiento.setFecha(LocalDateTime.now());
 

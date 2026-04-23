@@ -1,6 +1,7 @@
 package com.sapam.inventario.javafx.controller;
 
 import com.sapam.inventario.entity.Producto;
+import com.sapam.inventario.entity.Usuario;
 import com.sapam.inventario.javafx.JavaFxApplication;
 import com.sapam.inventario.service.ProductoService;
 import javafx.beans.property.SimpleStringProperty;
@@ -28,6 +29,7 @@ import java.util.Optional;
 public class MainController {
 
     private ProductoService productoService;
+    private Usuario usuarioActual;
 
     @FXML
     private TableView<Producto> tablaProductos;
@@ -53,6 +55,10 @@ public class MainController {
     @FXML
     private TextField txtBuscar;
 
+    public void setUsuarioActual(Usuario usuario) {
+        this.usuarioActual = usuario;
+    }
+
     @FXML
     public void initialize() {
         productoService = JavaFxApplication.getContext().getBean(ProductoService.class);
@@ -60,9 +66,9 @@ public class MainController {
         colCodigo.setCellValueFactory(new PropertyValueFactory<>("codigoBarras"));
         colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
         colCategoria.setCellValueFactory(cellData -> {
-            Producto producto = cellData.getValue();
-            if (producto.getCategoria() != null) {
-                return new SimpleStringProperty(producto.getCategoria().getNombre());
+            Producto p = cellData.getValue();
+            if (p.getCategoria() != null) {
+                return new SimpleStringProperty(p.getCategoria().getNombre());
             }
             return new SimpleStringProperty("");
         });
@@ -70,7 +76,6 @@ public class MainController {
         colMinimo.setCellValueFactory(new PropertyValueFactory<>("stockMinimo"));
         
         configurarBotones();
-        
         cargarProductos();
     }
 
@@ -82,34 +87,30 @@ public class MainController {
             private final HBox pane = new HBox(5, btnEditar, btnSalida, btnEliminar);
 
             {
-                btnEditar.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black; -fx-cursor: hand;");
-                btnSalida.setStyle("-fx-background-color: #17A2B8; -fx-text-fill: white; -fx-cursor: hand;");
-                btnEliminar.setStyle("-fx-background-color: #DC3545; -fx-text-fill: white; -fx-cursor: hand;");
+                btnEditar.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black;");
+                btnSalida.setStyle("-fx-background-color: #17A2B8; -fx-text-fill: white;");
+                btnEliminar.setStyle("-fx-background-color: #DC3545; -fx-text-fill: white;");
                 
                 btnEditar.setOnAction(event -> {
-                    Producto producto = getTableView().getItems().get(getIndex());
-                    editarProducto(producto);
+                    Producto p = getTableView().getItems().get(getIndex());
+                    editarProducto(p);
                 });
                 
                 btnSalida.setOnAction(event -> {
-                    Producto producto = getTableView().getItems().get(getIndex());
-                    darSalida(producto);
+                    Producto p = getTableView().getItems().get(getIndex());
+                    darSalida(p);
                 });
                 
                 btnEliminar.setOnAction(event -> {
-                    Producto producto = getTableView().getItems().get(getIndex());
-                    eliminarProducto(producto);
+                    Producto p = getTableView().getItems().get(getIndex());
+                    eliminarProducto(p);
                 });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    setGraphic(pane);
-                }
+                setGraphic(empty ? null : pane);
             }
         });
     }
@@ -122,28 +123,31 @@ public class MainController {
             tablaProductos.setItems(productos);
         }
     }
-
     @FXML
     private void buscarProducto() {
         String codigo = txtBuscar.getText();
-        if (codigo.isEmpty()) {
-            cargarProductos();
+        if (codigo == null || codigo.trim().isEmpty()) {
+            cargarProductos();  // Si está vacío, mostrar todos
             return;
         }
+        
         Optional<Producto> producto = productoService.buscarPorCodigoBarras(codigo);
         if (producto.isPresent()) {
-            ObservableList<Producto> lista = FXCollections.observableArrayList(producto.get());
-            tablaProductos.setItems(lista);
+            tablaProductos.setItems(FXCollections.observableArrayList(producto.get()));
         } else {
-            tablaProductos.setItems(FXCollections.observableArrayList());
+            // Si no encuentra, mostrar mensaje y volver a cargar todos
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Búsqueda");
             alert.setHeaderText(null);
             alert.setContentText("No se encontró producto con código: " + codigo);
             alert.showAndWait();
+            
+            // Limpiar el campo de búsqueda y recargar todos los productos
+            txtBuscar.clear();
+            cargarProductos();
         }
     }
-
+   
     @FXML
     private void abrirNuevoProducto() {
         try {
@@ -174,10 +178,8 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/producto-form.fxml"));
             loader.setControllerFactory(JavaFxApplication.getContext()::getBean);
             Parent root = loader.load();
-            
             ProductoFormController controller = loader.getController();
             controller.setProducto(producto);
-            
             Stage stage = new Stage();
             stage.setTitle("Editar Producto");
             stage.setScene(new Scene(root));
@@ -193,10 +195,9 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/salida-form.fxml"));
             loader.setControllerFactory(JavaFxApplication.getContext()::getBean);
             Parent root = loader.load();
-            
             SalidaFormController controller = loader.getController();
             controller.setProducto(producto);
-            
+            controller.setUsuarioActual(usuarioActual);
             Stage stage = new Stage();
             stage.setTitle("Dar Salida - " + producto.getNombre());
             stage.setScene(new Scene(root));
@@ -212,7 +213,6 @@ public class MainController {
         confirm.setTitle("Confirmar eliminación");
         confirm.setHeaderText(null);
         confirm.setContentText("¿Eliminar producto: " + producto.getNombre() + "?");
-        
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             productoService.eliminar(producto.getId());

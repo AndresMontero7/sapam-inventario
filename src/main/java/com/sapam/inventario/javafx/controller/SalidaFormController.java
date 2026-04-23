@@ -1,6 +1,7 @@
 package com.sapam.inventario.javafx.controller;
 
 import com.sapam.inventario.entity.Producto;
+import com.sapam.inventario.entity.Usuario;
 import com.sapam.inventario.service.MovimientoService;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -29,11 +30,16 @@ public class SalidaFormController {
     private TextField txtRecibio;
 
     private Producto producto;
+    private Usuario usuarioActual;
 
     public void setProducto(Producto producto) {
         this.producto = producto;
         lblProducto.setText(producto.getNombre());
         lblStock.setText(String.valueOf(producto.getStockActual()));
+    }
+
+    public void setUsuarioActual(Usuario usuario) {
+        this.usuarioActual = usuario;
     }
 
     @FXML
@@ -46,10 +52,17 @@ public class SalidaFormController {
                 throw new Exception("Debe indicar quién recibe");
             }
 
-            // Usuario ID 1 (admin) - temporal
-            Integer usuarioId = 1;
-            
-            movimientoService.registrarSalida(producto.getId(), cantidad, usuarioId, recibio, "Salida desde interfaz");
+            if (usuarioActual == null) {
+                throw new Exception("Error: Usuario no autenticado");
+            }
+
+            movimientoService.registrarSalida(
+                producto.getId(),
+                cantidad,
+                usuarioActual.getId(),
+                recibio,
+                "Salida desde interfaz"
+            );
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Éxito");
@@ -72,6 +85,7 @@ public class SalidaFormController {
             alert.setHeaderText(null);
             alert.setContentText(e.getMessage());
             alert.showAndWait();
+            e.printStackTrace();
         }
     }
 
